@@ -1,48 +1,115 @@
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Main {
-    public static AtomicInteger counterFree = new AtomicInteger(0);
-    public static AtomicInteger counterFour = new AtomicInteger(0);
-    ;
-    public static AtomicInteger counterFive = new AtomicInteger(0);
-    ;
+    public static BlockingQueue<String> queueStringA = new ArrayBlockingQueue<>(100);
+    public static BlockingQueue<String> queueStringB = new ArrayBlockingQueue<>(100);
+    public static BlockingQueue<String> queueStringC = new ArrayBlockingQueue<>(100);
+
+    public static String stringA;
+    public static String stringB;
+    public static String stringC;
 
     public static void main(String[] args) throws InterruptedException {
         Random random = new Random();
         String[] texts = new String[100_000];
-        for (int i = 0; i < texts.length; i++) {
-            texts[i] = generateText("abc", 3 + random.nextInt(3));
-        }
+        new Thread(() -> {
+            for (int i = 0; i < texts.length; i++) {
+                texts[i] = generateText("abc", 3 + random.nextInt(3));
+                try {
+                    queueStringA.put(texts[i]);
+                    queueStringB.put(texts[i]);
+                    queueStringC.put(texts[i]);
+                    Thread.sleep(10);
+                } catch (InterruptedException e) {
+                    return;
+                }
+            }
+        }).start();
 
         Runnable runnable1 = () -> {
-            for (int i = 0; i < texts.length; i++) {
-                String text = texts[i];
+            int maxCount = 0;
 
-                if (checkingForPalindrome(text)) {
-                    incCounter(text.length());
+            for (int i = 0; i < 100; i++) {
+                String text;
+                int count = 0;
+
+                try {
+                    text = queueStringA.take();
+
+                    for (int j = 0; j < text.length(); j++) {
+                        if (text.charAt(j) == 'a') {
+                            count++;
+                        }
+                    }
+
+                    if (count > maxCount) {
+                        maxCount = count;
+                        stringA = text;
+                    }
+
+                    Thread.sleep(20);
+                } catch (InterruptedException e) {
+                    return;
                 }
             }
         };
 
 
         Runnable runnable2 = () -> {
-            for (int i = 0; i < texts.length; i++) {
-                String text = texts[i];
+            int maxCount = 0;
 
-                if (checkingForCharacterEquality(text)) {
-                    incCounter(text.length());
+            for (int i = 0; i < 100; i++) {
+                String text;
+                int count = 0;
+
+                try {
+                    text = queueStringB.take();
+
+                    for (int j = 0; j < text.length(); j++) {
+                        if (text.charAt(j) == 'b') {
+                            count++;
+                        }
+                    }
+
+                    if (count > maxCount) {
+                        maxCount = count;
+                        stringB = text;
+                    }
+                    Thread.sleep(20);
+                } catch (InterruptedException e) {
+                    return;
                 }
             }
         };
 
         Runnable runnable3 = () -> {
-            for (int i = 0; i < texts.length; i++) {
-                String text = texts[i];
-                if (checkingForCharacterAscending(text)) {
-                    incCounter(text.length());
+            int maxCount = 0;
+
+            for (int i = 0; i < 100; i++) {
+                String text;
+                int count = 0;
+
+                try {
+                    text = queueStringC.take();
+
+                    for (int j = 0; j < text.length(); j++) {
+                        if (text.charAt(j) == 'c') {
+                            count++;
+                        }
+                    }
+
+                    if (count > maxCount) {
+                        maxCount = count;
+                        stringC = text;
+                    }
+                    Thread.sleep(20);
+                } catch (InterruptedException e) {
+                    return;
                 }
             }
         };
@@ -65,9 +132,9 @@ public class Main {
             thread.join();
         }
 
-        System.out.println("Красивых слов с длиной 3: " + counterFree + " шт");
-        System.out.println("Красивых слов с длиной 4: " + counterFour + " шт");
-        System.out.println("Красивых слов с длиной 5: " + counterFive + " шт");
+        System.out.println("Текст с максимальным количеством символов а: " + stringA);
+        System.out.println("Текст с максимальным количеством символов b: " + stringB);
+        System.out.println("Текст с максимальным количеством символов c: " + stringC);
 
     }
 
@@ -78,54 +145,6 @@ public class Main {
             text.append(letters.charAt(random.nextInt(letters.length())));
         }
         return text.toString();
-    }
-
-    public static boolean checkingForPalindrome(String text) {
-        boolean isCounter = true;
-
-        for (int j = 0; j < text.length() / 2; j++) {
-            if (text.charAt(j) != text.charAt((text.length() - 1) - j)) {
-                isCounter = false;
-                break;
-            }
-        }
-
-        return isCounter;
-    }
-
-    public static boolean checkingForCharacterEquality(String text) {
-        boolean isCounter = true;
-
-        for (int j = 0; j < text.length() - 1; j++) {
-            if (text.charAt(j) != text.charAt(j + 1)) {
-                isCounter = false;
-                break;
-            }
-        }
-
-        return isCounter;
-    }
-
-    public static boolean checkingForCharacterAscending(String text) {
-        boolean isCounter = true;
-
-        for (int j = 0; j < text.length() - 1; j++) {
-            int res = Character.compare(text.charAt(j + 1), text.charAt(j));
-            if (res == -1) {
-                isCounter = false;
-                break;
-            }
-        }
-
-        return isCounter;
-    }
-
-    public static void incCounter(int length) {
-        switch (length) {
-            case 3 -> counterFree.getAndIncrement();
-            case 4 -> counterFour.getAndIncrement();
-            case 5 -> counterFive.getAndIncrement();
-        }
     }
 
 }
